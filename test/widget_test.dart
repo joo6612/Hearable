@@ -85,7 +85,7 @@ void main() {
     expect(settings.activeAccentColor, AppColors.burntOrange);
 
     // Logo style customization
-    expect(settings.logoStyle, LogoStyle.acousticWave);
+    expect(settings.logoStyle, LogoStyle.officialLogo);
     settings.setLogoStyle(LogoStyle.neonHeadphones);
     expect(settings.logoStyle, LogoStyle.neonHeadphones);
 

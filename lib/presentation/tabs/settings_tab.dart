@@ -576,7 +576,17 @@ class SettingsTab extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          Icon(style.icon, color: isSel ? Colors.white : Colors.white60, size: 22),
+                          style == LogoStyle.officialLogo
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Image.asset(
+                                    'assets/images/app_logo.png',
+                                    width: 22,
+                                    height: 22,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Icon(style.icon, color: isSel ? Colors.white : Colors.white60, size: 22),
                           const SizedBox(height: 4),
                           Text(
                             style.label.split(' ').first,

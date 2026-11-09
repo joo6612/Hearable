@@ -89,3 +89,4 @@ Write-Host "    SUCCESS! Hearable is now running on your device!" -ForegroundCol
 Write-Host " ==============================================================" -ForegroundColor Green
 Write-Host ""
 Read-Host " Press Enter to continue..."
+

@@ -51,7 +51,7 @@ class SettingsProvider extends ChangeNotifier {
   // --- Section B: Appearance & Glossy UI ---
   AppThemeMode _currentTheme = AppThemeMode.glassmorphismDark;
   AccentColorOption _accentColor = AccentColorOption.appleRed;
-  LogoStyle _logoStyle = LogoStyle.acousticWave;
+  LogoStyle _logoStyle = LogoStyle.officialLogo;
   double _glassBlurSigma = 24.0; // 10px - 30px
   double _borderOpacity = 0.14; // 0.05 - 0.30
   bool _reflectionGlowEnabled = true;

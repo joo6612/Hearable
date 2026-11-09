@@ -63,6 +63,7 @@ enum AccentColorOption {
 }
 
 enum LogoStyle {
+  officialLogo('Hearable Official', Icons.music_note_rounded),
   acousticWave('Acoustic Wave', Icons.graphic_eq_rounded),
   soundBeats('Sound Pulse', Icons.waves_rounded),
   neonHeadphones('Headphones', Icons.headphones_rounded),

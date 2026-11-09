@@ -54,3 +54,4 @@ class MusicProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
+
