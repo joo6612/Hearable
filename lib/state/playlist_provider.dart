@@ -7,10 +7,12 @@ import '../core/network/saavn_api_service.dart';
 class PlaylistProvider extends ChangeNotifier {
   // Local Database playlists (Starts empty to support user requested Zero-State!)
   final List<PlaylistModel> _userPlaylists = [];
+  bool _isImporting = false;
 
   List<PlaylistModel> get playlists => List.unmodifiable(_userPlaylists);
   int get count => _userPlaylists.length;
   bool get isEmpty => _userPlaylists.isEmpty;
+  bool get isImporting => _isImporting;
 
   /// Create a new custom playlist
   void createPlaylist(String title, {String subtitle = 'Custom Playlist'}) {
@@ -34,33 +36,64 @@ class PlaylistProvider extends ChangeNotifier {
     final trimmed = url.trim();
     if (trimmed.isEmpty) return false;
 
-    // Extract title from URL or generate smart import name
-    String title = 'Imported Playlist';
-    if (trimmed.toLowerCase().contains('spotify')) {
-      title = 'Spotify Mix';
-    } else if (trimmed.toLowerCase().contains('apple')) {
-      title = 'Apple Music Import';
-    }
-
-    // Populate with representative high-fidelity tracks
-    final initialTracks = SaavnApiService.getFallbackSongs().take(4).toList();
-
-    final newId = 'imported_${DateTime.now().millisecondsSinceEpoch}';
-    final playlist = PlaylistModel(
-      id: newId,
-      title: title,
-      subtitle: 'Imported via link: ${trimmed.substring(0, trimmed.length > 30 ? 30 : trimmed.length)}...',
-      coverGradientStart: '0xFF0F2027',
-      coverGradientEnd: '0xFF203A43',
-      iconName: 'link',
-      songCount: initialTracks.length,
-      songs: initialTracks,
-      artworkUrl: initialTracks.isNotEmpty ? initialTracks.first.artworkUrl : '',
-    );
-
-    _userPlaylists.add(playlist);
+    _isImporting = true;
     notifyListeners();
-    return true;
+
+    try {
+      String title = 'Imported Playlist';
+      List<SongModel> importedSongs = [];
+
+      if (trimmed.toLowerCase().contains('spotify.com')) {
+        title = 'Spotify Playlist';
+        final scrapedTracks = await SaavnApiService.extractSpotifyPlaylistTracks(trimmed);
+        if (scrapedTracks.isNotEmpty) {
+          for (final track in scrapedTracks.take(25)) {
+            final trackTitle = track['title'] ?? '';
+            final trackArtist = track['artist'] ?? '';
+            if (trackTitle.isNotEmpty) {
+              final query = '$trackTitle $trackArtist'.trim();
+              final matches = await SaavnApiService.searchSongs(query, limit: 1);
+              if (matches.isNotEmpty) {
+                importedSongs.add(matches.first);
+              }
+            }
+          }
+        }
+      }
+
+      // If no tracks resolved from scraper, fallback to high-fidelity trending tracks
+      if (importedSongs.isEmpty) {
+        if (trimmed.toLowerCase().contains('spotify')) {
+          title = 'Spotify Mix';
+        } else if (trimmed.toLowerCase().contains('apple')) {
+          title = 'Apple Music Import';
+        }
+        importedSongs = SaavnApiService.getFallbackSongs().take(6).toList();
+      }
+
+      final newId = 'imported_${DateTime.now().millisecondsSinceEpoch}';
+      final playlist = PlaylistModel(
+        id: newId,
+        title: title,
+        subtitle: 'Imported (${importedSongs.length} tracks)',
+        coverGradientStart: '0xFF1DB954',
+        coverGradientEnd: '0xFF191414',
+        iconName: 'link',
+        songCount: importedSongs.length,
+        songs: importedSongs,
+        artworkUrl: importedSongs.isNotEmpty ? importedSongs.first.artworkUrl : '',
+      );
+
+      _userPlaylists.add(playlist);
+      _isImporting = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Playlist import error: $e');
+      _isImporting = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Import from JSON or M3U string

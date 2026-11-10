@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import '../models/song_model.dart';
-import 'dsp_tuning_service.dart';
 
 class AudioPlayerHandler {
   static final AudioPlayerHandler instance = AudioPlayerHandler._();
@@ -29,22 +29,13 @@ class AudioPlayerHandler {
     try {
       _session = await AudioSession.instance;
       await _session!.configure(const AudioSessionConfiguration.music());
-
-      // Connect session ID to Android native DSP effects when available
-      _player.playbackEventStream.listen((event) {
-        final sessionId = _player.androidAudioSessionId;
-        if (sessionId != null && sessionId != DspTuningService.activeSessionId) {
-          DspTuningService.initEffects(sessionId);
-        }
-      });
-
       _isInitialized = true;
     } catch (e) {
       debugPrint('Error initializing AudioSession: $e');
     }
   }
 
-  /// Play a song from direct 320kbps URL
+  /// Play a song from direct 320kbps URL with lock-screen / notification metadata
   Future<void> playSong(SongModel song, {Duration? initialSeek}) async {
     await initialize();
     _currentSong = song;
@@ -56,13 +47,28 @@ class AudioPlayerHandler {
       }
 
       await _player.stop();
+
+      // Build MediaItem for lock-screen notification with artwork & metadata
+      final mediaItem = MediaItem(
+        id: streamUrl,
+        title: song.title,
+        artist: song.artist,
+        album: song.album,
+        duration: Duration(milliseconds: song.durationMs),
+        artUri: song.artworkUrl.isNotEmpty ? Uri.parse(song.artworkUrl) : null,
+        extras: {'quality': song.quality},
+      );
+
       final audioSource = AudioSource.uri(
         Uri.parse(streamUrl),
         headers: const {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': '*/*',
         },
+        tag: mediaItem,
       );
+
       await _player.setAudioSource(audioSource);
 
       if (initialSeek != null) {
@@ -70,12 +76,6 @@ class AudioPlayerHandler {
       }
 
       await _player.play();
-
-      // Ensure DSP tuning is active on the audio track
-      final sessionId = _player.androidAudioSessionId;
-      if (sessionId != null) {
-        await DspTuningService.initEffects(sessionId);
-      }
     } catch (e) {
       debugPrint('Error playing song ${song.title}: $e');
       rethrow;
@@ -118,4 +118,3 @@ class AudioPlayerHandler {
     await _player.dispose();
   }
 }
-

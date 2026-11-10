@@ -565,9 +565,34 @@ class PlaylistsTab extends StatelessWidget {
               onPressed: () async {
                 final link = linkController.text.trim();
                 if (link.isNotEmpty) {
-                  await context.read<PlaylistProvider>().importPlaylistFromLink(link);
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          ),
+                          SizedBox(width: 12),
+                          Text('Importing playlist & resolving 320kbps audio...'),
+                        ],
+                      ),
+                      duration: Duration(seconds: 15),
+                    ),
+                  );
+                  final success = await context.read<PlaylistProvider>().importPlaylistFromLink(link);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(success ? 'Playlist imported successfully!' : 'Failed to import playlist'),
+                        backgroundColor: success ? const Color(0xFF1DB954) : Colors.redAccent,
+                      ),
+                    );
+                  }
                 }
-                if (ctx.mounted) Navigator.pop(ctx);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.appleRed,

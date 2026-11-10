@@ -118,6 +118,109 @@ class _SongsTabState extends State<SongsTab> {
     return 'Good Evening';
   }
 
+  Widget _buildShowcaseCard({
+    required String title,
+    required String subtitle,
+    required List<Color> gradientColors,
+    required String category,
+    required IconData icon,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedChip = category);
+        _fetchSongsForCategory(category);
+      },
+      child: Container(
+        width: 240,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: LinearGradient(
+            colors: [
+              gradientColors[0].withValues(alpha: 0.85),
+              gradientColors[1].withValues(alpha: 0.55),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.18),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors[0].withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 12, color: Colors.white),
+                      const SizedBox(width: 5),
+                      const Text(
+                        'FEATURED',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(CupertinoIcons.play_circle_fill, color: Colors.white, size: 28),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final player = context.watch<PlayerProvider>();
@@ -265,6 +368,167 @@ class _SongsTabState extends State<SongsTab> {
               ),
             ),
           ),
+
+        // Showcase Cards Carousel
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 6),
+            child: SizedBox(
+              height: 154,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  _buildShowcaseCard(
+                    title: 'Billboard Hot 100',
+                    subtitle: 'Apple Spatial Audio • Chart Toppers',
+                    gradientColors: [const Color(0xFFFA233B), const Color(0xFF8A2387)],
+                    category: 'Billboard Top',
+                    icon: CupertinoIcons.flame_fill,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildShowcaseCard(
+                    title: 'Regional Top Hits',
+                    subtitle: 'Tamil & Global High Fidelity',
+                    gradientColors: [const Color(0xFF007AFF), const Color(0xFF7B2CBF)],
+                    category: 'Regional Top',
+                    icon: CupertinoIcons.sparkles,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildShowcaseCard(
+                    title: 'Viral New Trends',
+                    subtitle: '320kbps Studio Master Selection',
+                    gradientColors: [const Color(0xFFFF5E36), const Color(0xFFFA233B)],
+                    category: 'New Trends',
+                    icon: CupertinoIcons.music_albums_fill,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Recently Played Shelf (if history exists)
+        if (player.historySongs.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Recently Played',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.4,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    '${player.historySongs.length} played',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 148,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: player.historySongs.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final song = player.historySongs[index];
+                  final isCurrent = player.currentSong?.id == song.id;
+                  return GestureDetector(
+                    onTap: () {
+                      player.playSong(song, queue: player.historySongs, index: index);
+                    },
+                    child: SizedBox(
+                      width: 96,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: 96,
+                                  height: 96,
+                                  color: Colors.white.withValues(alpha: 0.05),
+                                  child: song.artworkUrl.isNotEmpty
+                                      ? CachedNetworkImage(
+                                          imageUrl: song.artworkUrl,
+                                          fit: BoxFit.cover,
+                                          placeholder: (_, __) => Container(
+                                            color: Colors.white10,
+                                            child: const Center(
+                                              child: Icon(CupertinoIcons.music_note, color: Colors.white38, size: 28),
+                                            ),
+                                          ),
+                                          errorWidget: (_, __, ___) => Container(
+                                            color: Colors.white10,
+                                            child: const Center(
+                                              child: Icon(CupertinoIcons.music_note, color: Colors.white38, size: 28),
+                                            ),
+                                          ),
+                                        )
+                                      : const Center(
+                                          child: Icon(CupertinoIcons.music_note, color: Colors.white38, size: 28),
+                                        ),
+                                ),
+                                if (isCurrent)
+                                  Positioned.fill(
+                                    child: Container(
+                                      color: Colors.black45,
+                                      child: const Center(
+                                        child: Icon(CupertinoIcons.waveform, color: AppColors.appleRed, size: 24),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            song.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
+                              color: isCurrent ? accentColor : Colors.white,
+                            ),
+                          ),
+                          Text(
+                            song.artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
 
         // Filter Chips Row
         SliverToBoxAdapter(

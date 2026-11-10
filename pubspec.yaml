@@ -2,7 +2,7 @@ name: hearable
 description: "Hearable - High-Fidelity Apple Music Glassmorphic Streaming Player & Party Engine."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 2.0.0+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -13,6 +13,8 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   just_audio: ^0.9.46
+  audio_service: ^0.18.17
+  just_audio_background: ^0.0.1-beta.12
   audio_session: ^0.1.25
   http: ^1.2.2
   provider: ^6.1.2
@@ -20,9 +22,11 @@ dependencies:
   cached_network_image: ^3.4.1
   intl: ^0.19.0
   dart_des: ^1.0.2
+  shared_preferences: ^2.3.3
 
 dependency_overrides:
   path_provider_android: 2.2.15
+  shared_preferences_android: 2.3.4
 
 dev_dependencies:
   flutter_test:

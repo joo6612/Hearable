@@ -42,6 +42,8 @@ class _MainScaffoldState extends State<MainScaffold> {
     final miniPlayerBottom = tabBarBottom + 66.0 + 10.0;
 
     return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: true,
       backgroundColor: settings.currentTheme == AppThemeMode.pitchBlackOled
           ? AppColors.backgroundOled
           : settings.currentTheme == AppThemeMode.glassmorphismDark

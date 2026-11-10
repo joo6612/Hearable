@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+/// Pure natural-sound bit-perfect DSP service.
+/// DSP effects are opt-in only via the 5-band graphic EQ in Settings.
+/// Default state: clean, unprocessed 320kbps M4A passthrough.
 class DspTuningService {
-  static const MethodChannel _channel = MethodChannel('com.hearable.music/audio_effects');
+  static const MethodChannel _channel =
+      MethodChannel('com.hearable.music/audio_effects');
 
-  static bool _isTuningEnabled = true;
-  static int _bassStrength = 700;
-  static int _virtualizerStrength = 500;
+  static bool _isTuningEnabled = false; // DEFAULT: clean/flat (bit-perfect)
+  static int _bassStrength = 0;
+  static int _virtualizerStrength = 0;
   static int? _activeSessionId;
 
   static bool get isTuningEnabled => _isTuningEnabled;
@@ -14,59 +18,62 @@ class DspTuningService {
   static int get virtualizerStrength => _virtualizerStrength;
   static int? get activeSessionId => _activeSessionId;
 
-  /// Initialize native Equalizer, BassBoost, and Virtualizer effects on the player's audioSessionId
+  /// Initialize native effects (but do NOT auto-apply any boost – flat pass)
   static Future<void> initEffects(int? sessionId) async {
     try {
       _activeSessionId = sessionId;
       await _channel.invokeMethod('initEffects', {
         'sessionId': sessionId ?? 0,
       });
-
-      // Apply initial Apple Signature Tuning preset automatically if enabled
+      // Apply current state without forcing pre-amp on
       if (_isTuningEnabled) {
-        await applyAppleSignatureTuning(true);
+        await applyEqPreset(enabled: true);
       }
     } on PlatformException catch (e) {
-      debugPrint('PlatformException in DspTuningService.initEffects: ${e.message}');
+      debugPrint('DspTuningService initEffects error: ${e.message}');
     } catch (e) {
       debugPrint('Error initializing DSP audio effects: $e');
     }
   }
 
-  /// Apply Apple Signature Hardware Tuning Preset:
-  /// - 60Hz Sub-Bass: +3.5dB
-  /// - 250Hz Warmth: +1.5dB
-  /// - 1kHz Mids: -1.0dB
-  /// - 4kHz Presence: +2.0dB
-  /// - 12kHz Treble: +3.0dB
-  /// - Hardware Virtualizer: 50% strength (500)
-  /// - BassBoost: 700 strength
-  static Future<bool> applyAppleSignatureTuning(
-    bool enabled, {
-    int? bassStrength,
-    int? virtualizerStrength,
+  /// Apply EQ preset. When disabled, all bands set to 0dB (flat / bit-perfect).
+  static Future<bool> applyEqPreset({
+    bool enabled = false,
+    int bassBoostStrength = 0,
+    int virtualizerStrengthVal = 0,
+    Map<String, double> bandGains = const {},
   }) async {
     _isTuningEnabled = enabled;
-    if (bassStrength != null) _bassStrength = bassStrength;
-    if (virtualizerStrength != null) _virtualizerStrength = virtualizerStrength;
+    _bassStrength = enabled ? bassBoostStrength : 0;
+    _virtualizerStrength = enabled ? virtualizerStrengthVal : 0;
 
     try {
       final res = await _channel.invokeMethod<bool>('setAppleSignatureTuning', {
         'enabled': enabled,
         'bassStrength': _bassStrength,
         'virtualizerStrength': _virtualizerStrength,
+        'bandGains': bandGains,
       });
       return res ?? false;
     } on PlatformException catch (e) {
-      debugPrint('PlatformException in applyAppleSignatureTuning: ${e.message}');
+      debugPrint('DspTuningService applyEqPreset error: ${e.message}');
       return false;
     } catch (e) {
-      debugPrint('Error applying Apple Signature Tuning: $e');
+      debugPrint('Error applying EQ preset: $e');
       return false;
     }
   }
 
-  /// Set Bass Boost level (0 to 1000)
+  // Keep backward-compat signature for PlayerProvider toggle
+  static Future<bool> applyAppleSignatureTuning(bool enabled,
+      {int? bassStrength, int? virtualizerStrength}) async {
+    return applyEqPreset(
+      enabled: enabled,
+      bassBoostStrength: bassStrength ?? 0,
+      virtualizerStrengthVal: virtualizerStrength ?? 0,
+    );
+  }
+
   static Future<void> setBassBoost(bool enabled, int strength) async {
     _bassStrength = strength;
     try {
@@ -79,7 +86,6 @@ class DspTuningService {
     }
   }
 
-  /// Set Hardware Virtualizer Stereo Expansion level (0 to 1000)
   static Future<void> setVirtualizer(bool enabled, int strength) async {
     _virtualizerStrength = strength;
     try {
@@ -92,10 +98,10 @@ class DspTuningService {
     }
   }
 
-  /// Query native equalizer bands & levels
   static Future<Map<String, dynamic>> getEffectsState() async {
     try {
-      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>('getAudioEffectsState');
+      final result =
+          await _channel.invokeMethod<Map<dynamic, dynamic>>('getAudioEffectsState');
       if (result != null) {
         return Map<String, dynamic>.from(result);
       }
@@ -105,7 +111,6 @@ class DspTuningService {
     return {};
   }
 
-  /// Release native effects
   static Future<void> releaseEffects() async {
     try {
       await _channel.invokeMethod('releaseEffects');
@@ -114,4 +119,3 @@ class DspTuningService {
     }
   }
 }
-

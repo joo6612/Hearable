@@ -54,3 +54,6 @@ android/app/build/
 # Bugreports & archives
 *.zip
 *.tar.gz
+
+video_1.mp4
+*.zip
