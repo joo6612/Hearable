@@ -15,30 +15,25 @@ android {
 
     defaultConfig {
         applicationId = "com.hearable.music"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            ndk {
-                abiFilters += setOf("arm64-v8a", "armeabi-v7a")
-                debugSymbolLevel = "NONE"
-            }
         }
         debug {
-            ndk {
-                abiFilters += setOf("arm64-v8a")
-            }
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
