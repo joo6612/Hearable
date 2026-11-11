@@ -5,13 +5,13 @@ import android.media.audiofx.Equalizer
 import android.media.audiofx.Virtualizer
 import android.util.Log
 import androidx.annotation.NonNull
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import kotlin.math.abs
 
-class MainActivity : FlutterActivity() {
+class MainActivity : AudioServiceActivity() {
     private val CHANNEL = "com.hearable.music/audio_effects"
     private val TAG = "HearableAudioFX"
 
